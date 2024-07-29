@@ -1,0 +1,162 @@
+﻿apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-sample-app-dev
+spec:
+  params:
+    - name: APP_NAME
+      type: string
+    - name: GIT_REPO_URL
+      type: string
+    - name: GIT_REVISION
+      type: string
+    - name: IMAGE_REGISTRY
+      type: string
+      default: image-registry.openshift-image-registry.svc:5000
+    - name: current-pipelinerun
+      type: string
+  workspaces:
+    - name: workspace
+  tasks:
+    - name: clone-repository
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: workspace
+      params:
+        - name: url
+          value: $(params.GIT_REPO_URL)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+
+    # sample-app
+    - name: sample-app-unit-test
+      taskRef:
+        name: sample-app-unit-test
+        kind: Task
+      runAfter:
+        - clone-repository
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: apps/sample-app
+
+    - name: build-and-push-sample-app-image
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - sample-app-unit-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: DOCKERFILE
+          value: ./apps/sample-app/Dockerfile
+        - name: CONTEXT
+          value: ./apps/sample-app
+        - name: TLSVERIFY
+          value: "false"
+        - name: IMAGE
+          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/$(params.APP_NAME):latest
+
+    - name: sample-app-integration-test
+      taskRef:
+        name: integration-test
+        kind: Task
+      runAfter:
+        - build-and-push-sample-app-image
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: integration-test/sample-app
+
+    # sample-vew
+    - name: sample-view-unit-test
+      taskRef:
+        name: sample-view-unit-test
+        kind: Task
+      runAfter:
+        - clone-repository
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: apps/sample-view
+
+    - name: build-and-push-sample-view-image
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - sample-view-unit-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: DOCKERFILE
+          value: ./apps/sample-view/Dockerfile
+        - name: CONTEXT
+          value: ./apps/sample-view
+        - name: TLSVERIFY
+          value: "false"
+        - name: IMAGE
+          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/sample-view:latest
+
+    # e2e
+    - name: e2e-test
+      taskRef:
+        name: e2e-test
+        kind: Task
+      runAfter:
+        - build-and-push-sample-view-image
+        - sample-app-integration-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: e2e
+
+  finally:
+    - name: build-and-push-test-reports-image
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: DOCKERFILE
+          value: ./apps-for-test/test-reports/Dockerfile
+        - name: CONTEXT
+          value: ./apps-for-test/test-reports
+        - name: TLSVERIFY
+          value: "false"
+        - name: IMAGE
+          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/test-reports:latest
+## 備考
+# - name: sync-argo-app
+#   taskRef:
+#     name: argocd-task-sync-and-wait
+#     kind: ClusterTask
+#   runAfter:
+#     - build-and-push-image
+#   params:
+#     - name: application-name
+#       value: "apps" # 同期するArgo CDアプリケーションの名前
+#     - name: revision
+#       value: "HEAD" # 同期するリビジョン（通常はHEAD）
+#     - name: flags
+#       value: --insecure # needed in this example only because the Argo CD server is locally hosted

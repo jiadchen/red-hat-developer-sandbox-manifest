@@ -1,0 +1,42 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: sample-app-trigger-template-dev
+spec:
+  params:
+    - name: GIT_REPO_URL
+      description: The git repository url
+    - name: GIT_REPO_NAME
+      description: The name of the deployment to be created / patched
+    - name: GIT_REVISION
+      description: The git revision
+      default: ""
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        name: sample-app-pipeline-run-$(uid)
+        namespace: rhn-support-jiadchen-dev
+      spec:
+        serviceAccountName: pipeline
+        pipelineRef:
+          name: pipeline-sample-app-dev
+        params:
+          - name: APP_NAME
+            value: sample-app
+          - name: GIT_REPO_URL
+            value: $(tt.params.GIT_REPO_URL)
+          - name: GIT_REVISION
+            value: $(tt.params.GIT_REVISION)
+          - name: current-pipelinerun
+            value: $(context.pipelineRun.name)
+        workspaces:
+          - name: workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 10Gi

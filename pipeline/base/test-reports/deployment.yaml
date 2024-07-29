@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: test-reports
+  labels:
+    app: test-reports
+  annotations:
+      image.openshift.io/triggers: >-
+          [{"from":{"kind":"ImageStreamTag","name":"test-reports:latest","namespace":"rhn-support-jiadchen-dev"},"fieldPath":"spec.template.spec.containers[?(@.name==\"test-reports\")].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: test-reports
+  template:
+    metadata:
+      labels:
+        deployment: test-reports
+        app: test-reports
+        version: v1
+    spec:
+      containers:
+        - name: test-reports
+          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/test-reports:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP

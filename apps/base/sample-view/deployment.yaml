@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sample-view
+  labels:
+    app: sample-view
+  annotations:
+      image.openshift.io/triggers: >-
+          [{"from":{"kind":"ImageStreamTag","name":"sample-view:latest","namespace":"rhn-support-jiadchen-dev"},"fieldPath":"spec.template.spec.containers[?(@.name==\"sample-view\")].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: sample-view
+  template:
+    metadata:
+      labels:
+        deployment: sample-view
+        app: sample-view
+        version: v1
+    spec:
+      containers:
+        - name: sample-view
+          image: image-registry.openshift-image-registry.svc:5000/sample-system-dev/sample-view:latest
+          ports:
+            - containerPort: 3000
+              protocol: TCP

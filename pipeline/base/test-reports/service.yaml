@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: test-reports
+  labels:
+    app: test-reports
+spec:
+  ports:
+    - name: 8080-tcp
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    deployment: test-reports

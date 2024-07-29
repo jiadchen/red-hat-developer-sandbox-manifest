@@ -1,0 +1,16 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: sample-view
+  labels:
+    app: sample-view
+spec:
+  to:
+    kind: Service
+    name: sample-view
+    weight: 100
+  port:
+    targetPort: 8080-tcp
+  wildcardPolicy: None
+  tls:
+    termination: edge
