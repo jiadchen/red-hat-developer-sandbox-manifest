@@ -187,11 +187,12 @@ spec:
         set -e
 
         # 確認したいPodの名前とNamespaceを設定
-        APP_NAME=$(params.ENVIRONMENT)-$(params.APP_NAME)
+        APP_NAME=$(params.APP_NAME)
         NAMESPACE=$(params.NAMESPACE)
         IMAGE_TAG=$(params.GIT_REVISION)
         POD_NAMESPACE=$(params.POD_NAMESPACE)
         IMAGE=$(params.IMAGE_REGISTRY)/$NAMESPACE/$APP_NAME:$IMAGE_TAG
+        ENVIRONMENT=$(params.ENVIRONMENT)
         echo "Checking deployment status for $APP_NAME in $POD_NAMESPACE"
         echo "$IMAGE should be deployed"
 
@@ -202,7 +203,7 @@ spec:
 
         # デプロイメントの更新が完了するまで待機
         while true; do
-          POD_STATUS=$(oc get pods -n $POD_NAMESPACE -l app=$APP_NAME -o jsonpath="{.items[*].status.containerStatuses[*].image}")
+          POD_STATUS=$(oc get pods -n $POD_NAMESPACE -l app=$ENVIRONMENT-$APP_NAME -o jsonpath="{.items[*].status.containerStatuses[*].image}")
           echo "Current pod status: $POD_STATUS"
 
           if echo "$POD_STATUS" | grep -q "$IMAGE"; then
