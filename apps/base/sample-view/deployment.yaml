@@ -5,8 +5,8 @@ metadata:
   labels:
     app: sample-view
   annotations:
-      image.openshift.io/triggers: >-
-          [{"from":{"kind":"ImageStreamTag","name":"sample-view:latest","namespace":"rhn-support-jiadchen-dev"},"fieldPath":"spec.template.spec.containers[?(@.name==\"sample-view\")].image"}]
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"sample-view:latest","namespace":"jiadchen-dev"},"fieldPath":"spec.template.spec.containers[?(@.name==\"sample-view\")].image"}]
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: sample-view
-          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-view:latest
+          image: image-registry.openshift-image-registry.svc:5000/jiadchen-dev/sample-view:latest
           ports:
             - containerPort: 3000
               protocol: TCP

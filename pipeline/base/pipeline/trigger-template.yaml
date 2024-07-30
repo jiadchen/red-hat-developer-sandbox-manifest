@@ -17,7 +17,7 @@ spec:
       kind: PipelineRun
       metadata:
         name: sample-app-pipeline-run-$(uid)
-        namespace: rhn-support-jiadchen-dev
+        namespace: jiadchen-dev
       spec:
         serviceAccountName: pipeline
         pipelineRef:

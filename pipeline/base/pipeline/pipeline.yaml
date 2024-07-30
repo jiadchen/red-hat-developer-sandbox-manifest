@@ -66,7 +66,7 @@ spec:
         - name: TLSVERIFY
           value: "false"
         - name: IMAGE
-          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/$(params.APP_NAME):latest
+          value: $(params.IMAGE_REGISTRY)/jiadchen-dev/$(params.APP_NAME):latest
 
     - name: sample-app-integration-test
       taskRef:
@@ -112,7 +112,7 @@ spec:
         - name: TLSVERIFY
           value: "false"
         - name: IMAGE
-          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/sample-view:latest
+          value: $(params.IMAGE_REGISTRY)/jiadchen-dev/sample-view:latest
 
     # e2e
     - name: e2e-test
@@ -145,7 +145,7 @@ spec:
         - name: TLSVERIFY
           value: "false"
         - name: IMAGE
-          value: $(params.IMAGE_REGISTRY)/rhn-support-jiadchen-dev/test-reports:latest
+          value: $(params.IMAGE_REGISTRY)/jiadchen-dev/test-reports:latest
 ## 備考
 # - name: sync-argo-app
 #   taskRef:
