@@ -1,0 +1,470 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sample-app-unit-test
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: unit-test
+      image: "eclipse-temurin:21"
+      env:
+        - name: GRADLE_USER_HOME
+          value: "/home/gradle"
+        - name: TZ
+          value: "Asia/Tokyo"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/usr/bin/env bash
+        ./gradlew jacocoTestReport --info
+        gradle_exit_code=$?
+        cp -R build/reports/tests/test/* ../../apps-for-test/test-reports/public/sample-app/unit-test/
+        if [ $gradle_exit_code -ne 0 ]; then
+          echo "jacocoTestReport failed"
+          exit 1
+        fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sample-app-sonar
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: sonar
+      image: "eclipse-temurin:21"
+      env:
+        - name: GRADLE_USER_HOME
+          value: "/home/gradle"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/usr/bin/env bash
+        ./gradlew sonar --info
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: tag-image-version
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: IMAGE_REGISTRY
+      type: string
+    - name: NAMESPACE
+      type: string
+    - name: APP_NAME
+      type: string
+    - name: GIT_REVISION
+      type: string
+    - name: PROJECT_DIR
+      description: The directory containing VERSION
+      type: string
+      default: "."
+  steps:
+    - name: tag-image-version
+      image: "registry.redhat.io/rhel8/buildah@sha256:aac6629389db17e99894c5bee0da01d4c8065d11d8c6f6e1602f9484290baa70"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/bin/sh
+        VERSION=$(cat VERSION)
+        if buildah from $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$VERSION > /dev/null 2>&1; then
+          echo "タグ $VERSION が存在します。Skip..."
+        else
+          echo "タグ $VERSION は存在しません。"
+          echo "$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)をpullする"
+          buildah pull $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)
+          echo "$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$VERSION タグをつける"
+          buildah tag $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION) $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$VERSION
+          echo "$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$VERSION をpushする"
+          buildah push $(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$VERSION
+        fi
+      securityContext:
+        capabilities:
+          add:
+            - SETFCAP
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: update-image-tag-in-repo
+spec:
+  params:
+    - name: IMAGE_REGISTRY
+      type: string
+    - name: NAMESPACE
+      type: string
+    - name: POD_NAMESPACE
+      type: string
+    - name: APP_NAME
+      type: string
+    - name: GIT_REVISION
+      type: string
+    - name: APP_GIT_REPO_URL
+      type: string
+    - name: MANIFEST_DIR
+      type: string
+    - name: ENVIRONMENT
+      type: string
+  steps:
+    - name: update-git-commit-push
+      image: "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
+      script: |
+        #!/bin/sh
+        yum install -y git
+
+        USERNAME=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.username}' | base64 --decode)
+        echo username is $USERNAME
+        TOKEN=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.token}' | base64 --decode)
+        echo token is $TOKEN
+
+        git config --global user.email "sample-app-pipeline@openshift.com"
+        git config --global user.name "sample-app-pipeline"
+
+        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$TOKEN@|; s|red-hat-developer-sandbox-apps|red-hat-developer-sandbox-manifest|")
+        echo gitops repo url is $GITOPS_REPO_URL
+
+        echo "Cloning GitOps repository..."
+        git clone $GITOPS_REPO_URL gitops-repo
+        cd gitops-repo/$(params.MANIFEST_DIR)/$(params.ENVIRONMENT)
+        git remote set-url origin $GITOPS_REPO_URL
+
+        echo "Updating patch's deployment.yaml..."
+        sed -i 's|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):[^|]*|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)|g' patch/$(params.APP_NAME)/deployment.yaml
+        git add patch/$(params.APP_NAME)/deployment.yaml
+        git commit -m "Update $(params.APP_NAME) image tag to $(params.GIT_REVISION)"
+
+        MAX_RETRIES=3
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          echo "Attempting to push to remote..."
+          git push origin main
+          if [ $? -eq 0 ]; then
+            echo "Push successful."
+            exit 0
+          else
+            echo "Push failed. Attempting rebase..."
+            git pull origin main --rebase
+            if [ $? -ne 0 ]; then
+              echo "Rebase failed. Exiting..."
+              exit 1
+            fi
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            echo "Retrying push... (Attempt: $RETRY_COUNT)"
+          fi
+        done
+
+        echo "Push failed after $MAX_RETRIES attempts."
+        exit 1
+    - name: check-deployment-status
+      image: "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
+      script: |
+        #!/bin/sh
+        set -e
+
+        # 確認したいPodの名前とNamespaceを設定
+        APP_NAME=$(params.APP_NAME)
+        NAMESPACE=$(params.NAMESPACE)
+        IMAGE_TAG=$(params.GIT_REVISION)
+        POD_NAMESPACE=$(params.POD_NAMESPACE)
+        IMAGE=$(params.IMAGE_REGISTRY)/$NAMESPACE/$APP_NAME:$IMAGE_TAG
+        ENVIRONMENT=$(params.ENVIRONMENT)
+        echo "Checking deployment status for $APP_NAME in $POD_NAMESPACE"
+        echo "$IMAGE should be deployed"
+
+        # タイムアウト時間を秒単位で設定（10分 = 600秒）
+        TIMEOUT=600
+        INTERVAL=30
+        ELAPSED=0
+
+        # デプロイメントの更新が完了するまで待機
+        while true; do
+          POD_STATUS=$(oc get pods -n $POD_NAMESPACE -l app=$ENVIRONMENT-$APP_NAME -o jsonpath="{.items[*].status.containerStatuses[*].image}")
+          echo "Current pod status: $POD_STATUS"
+
+          if echo "$POD_STATUS" | grep -q "$IMAGE"; then
+            echo "Deployment updated successfully with image tag: $IMAGE_TAG"
+            break
+          fi
+
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Deployment update timed out after $TIMEOUT seconds"
+            exit 1
+          fi
+
+          echo "Waiting for deployment to update with image tag: $IMAGE_TAG"
+          sleep $INTERVAL
+          ELAPSED=$(($ELAPSED + $INTERVAL))
+        done
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: integration-test
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: integration-test
+      image: "eclipse-temurin:21"
+      env:
+        - name: GRADLE_USER_HOME
+          value: "/home/gradle"
+        - name: TZ
+          value: "Asia/Tokyo"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/usr/bin/env bash
+        SPRING_PROFILES_ACTIVE=it ./gradlew test --info
+        gradle_exit_code=$?
+        cp -R build/reports/tests/test/* ../../apps-for-test/test-reports/public/sample-app/integration-test/
+        if [ $gradle_exit_code -ne 0 ]; then
+          echo "test failed"
+          exit 1
+        fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: wait-for-previous-run
+spec:
+  params:
+    - name: pipeline-name
+      type: string
+    - name: namespace
+      type: string
+    - name: current-pipelinerun
+      type: string
+  steps:
+    - name: wait
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      script: |
+        #!/bin/sh
+        echo "Current PipelineRun: $(params.current-pipelinerun)"
+        
+        while true; do
+          # 実行中のPipelineRunを取得し、開始時間の昇順でソート
+          EARLIEST_RUNNING_PIPELINERUN=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[?(@.status.conditions[0].status=="Unknown")]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -k2 | head -n1 | cut -f1)
+          LATEST_RUNNING_PIPELINERUN=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[?(@.status.conditions[0].status=="Unknown")]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -rk2 | head -n1 | cut -f1)
+          
+          # 一番早く開始されたPipelineRunの名前を出力
+          echo "Earliest running PipelineRun: $EARLIEST_RUNNING_PIPELINERUN"
+          # 一番遅く開始されたPipelineRunの名前を出力
+          echo "Latest running PipelineRun: $LATEST_RUNNING_PIPELINERUN"
+
+          # 一番遅く開始されたPipelineRunと自分自身を比較
+          if [ "$LATEST_RUNNING_PIPELINERUN" != "$(params.current-pipelinerun)" ]; then
+            echo "A later PipelineRun has been found: $LATEST_RUNNING_PIPELINERUN. Cancelling current PipelineRun: $(params.current-pipelinerun)"
+            # 自分自身をキャンセル
+            oc patch pipelinerun '$(params.current-pipelinerun)' -n '$(params.namespace)' -p '{"spec":{"status":"Cancelled"}}' --type=merge
+            exit 1
+          fi
+
+          # 一番早く開始されたPipelineRunと自分自身を比較
+          if [ "$EARLIEST_RUNNING_PIPELINERUN" = "$(params.current-pipelinerun)" ]; then
+            echo "This PipelineRun is the earliest running instance. Proceeding..."
+            break
+          fi
+
+          # 他のPipelineRunがまだ実行中の場合、待機
+          echo "Waiting for turn. Earliest running PipelineRun: $EARLIEST_RUNNING_PIPELINERUN"
+          sleep 10
+        done
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sample-view-unit-test
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: unit-test
+      image: "node:18-alpine"
+      env:
+        - name: TZ
+          value: "Asia/Tokyo"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/bin/sh
+        npm ci
+        npm run test
+        test_exit_code=$?
+        cp -R test-results/* ../../apps-for-test/test-reports/public/sample-view/unit-test/
+        if [ $test_exit_code -ne 0 ]; then
+          echo "test failed"
+          exit 1
+        fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sample-view-sonar
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: sampe-view-sonar
+      image: "node:18-alpine"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/bin/sh
+        apk add --no-cache openjdk17
+        npm run sonar
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sample-view-storybook-interaction-test
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: interaction-test
+      image: "mcr.microsoft.com/playwright:v1.45.1-jammy"
+      env:
+        - name: TZ
+          value: "Asia/Tokyo"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/bin/sh
+        ./test-storybook.sh
+        test_exit_code=$?
+        npm run build-storybook
+        cp -R storybook-static/* ../../apps-for-test/test-reports/public/sample-view/storybook/
+        if [ $test_exit_code -ne 0 ]; then
+          echo "test failed"
+          exit 1
+        fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: e2e-test
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace consisting of the gradle project.
+  params:
+    - name: PROJECT_DIR
+      description: The directory containing build.gradle
+      type: string
+      default: "."
+  steps:
+    - name: e2e-test
+      image: "mcr.microsoft.com/playwright:v1.45.1-jammy"
+      env:
+        - name: TZ
+          value: "Asia/Tokyo"
+      workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
+      script: |
+        #!/bin/sh
+        npm ci
+        npm run test-ci
+        test_exit_code=$?
+        cp -R playwright-report/* ../apps-for-test/test-reports/public/e2e/
+        if [ $test_exit_code -ne 0 ]; then
+          echo "test failed"
+          exit 1
+        fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cleanup-pipelinerun
+spec:
+  params:
+    - name: pipeline-name
+      type: string
+    - name: namespace
+      type: string
+  steps:
+    - name: cleanup
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      script: |
+        #!/bin/sh
+        echo "Pipeline: $(params.pipeline-name)"
+        echo "Namespace: $(params.namespace)"
+        
+        # 全てのPipelineRunを取得し、開始時間の昇順でソート
+        PIPELINERUNS=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -k2)
+        
+        # PipelineRunの数を数える
+        PIPELINERUN_COUNT=$(echo "$PIPELINERUNS" | wc -l)
+        echo "Number of PipelineRuns: $PIPELINERUN_COUNT"
+        
+        # PipelineRunの数が4以上の場合、一番早く開始されたPipelineRunを削除
+        if [ "$PIPELINERUN_COUNT" -ge 4 ]; then
+          EARLIEST_PIPELINERUN=$(echo "$PIPELINERUNS" | head -n1 | cut -f1)
+          echo "Earliest PipelineRun to delete: $EARLIEST_PIPELINERUN"
+          
+          # PipelineRunを削除
+          oc delete pipelinerun $EARLIEST_PIPELINERUN -n $(params.namespace)
+        else
+          echo "Number of PipelineRuns is less than 4. No action taken."
+        fi
