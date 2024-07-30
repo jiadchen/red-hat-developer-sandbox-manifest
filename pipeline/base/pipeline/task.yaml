@@ -141,7 +141,7 @@ spec:
         git config --global user.email "sample-app-pipeline@openshift.com"
         git config --global user.name "sample-app-pipeline"
 
-        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$PASSWORD@|; s|apps|manifest|")
+        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$PASSWORD@|; s|apps|manifest|")
 
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
