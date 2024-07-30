@@ -135,13 +135,13 @@ spec:
         #!/bin/sh
         yum install -y git
 
-        USERNAME=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.username}' | base64 --decode)
-        PASSWORD=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.password}' | base64 --decode)
+        GIT_TOKEN=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.password}' | base64 --decode)
 
         git config --global user.email "sample-app-pipeline@openshift.com"
         git config --global user.name "sample-app-pipeline"
 
-        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$PASSWORD@|; s|apps|manifest|")
+        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$GIT_TOKEN@|; s|red-hat-developer-sandbox-apps|red-hat-developer-sandbox-manifest|")
+
 
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
