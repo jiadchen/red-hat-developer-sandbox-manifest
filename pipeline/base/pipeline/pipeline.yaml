@@ -82,7 +82,7 @@ spec:
         - name: POD_NAMESPACE
           value: jiadchen-dev
         - name: APP_NAME
-          value: it-sample-app
+          value: $(params.APP_NAME)
         - name: GIT_REVISION
           value: $(params.GIT_REVISION)
         - name: APP_GIT_REPO_URL
@@ -152,7 +152,7 @@ spec:
         - name: POD_NAMESPACE
           value: jiadchen-dev
         - name: APP_NAME
-          value: it-sample-view
+          value: sample-view
         - name: GIT_REVISION
           value: $(params.GIT_REVISION)
         - name: APP_GIT_REPO_URL
