@@ -1,0 +1,35 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apply-manifest
+spec:
+  params:
+    - name: GIT_REPO_URL
+      type: string
+    - name: NAMESPACE
+      type: string
+  steps:
+    - name: apply
+      image: "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
+      script: |
+        #!/bin/sh
+        yum install -y git
+
+        GITOPS_REPO_URL=$(params.GIT_REPO_URL)
+        echo gitops repo url is $GITOPS_REPO_URL
+        NAMESPACE=$(params.NAMESPACE)
+        echo namespace is $NAMESPACE
+
+        echo "Cloning GitOps repository..."
+        git clone $GITOPS_REPO_URL gitops-repo
+        cd gitops-repo/apps
+        oc project $NAMESPACE
+
+        echo "Applying apps manifests..."
+        oc apply -k overlays/it
+        oc apply -k overlays/dev
+
+        cd ../apps-pipeline
+        echo "Applying apps-pipeline manifests..."
+        oc apply -k overlays/dev

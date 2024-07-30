@@ -1,0 +1,30 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: gitops-event-listener-dev
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - bindings:
+        - ref: gitops-trigger-binding-dev
+      template:
+        ref: gitops-trigger-template-dev
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: el-gitops-event-listener-dev
+  labels:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: gitops-event-listener-dev
+  annotations:
+    openshift.io/host.generated: "true"
+spec:
+  to:
+    kind: Service
+    name: el-gitops-event-listener-dev
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

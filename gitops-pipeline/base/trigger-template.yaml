@@ -1,0 +1,29 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: gitops-trigger-template-dev
+spec:
+  params:
+    - name: GIT_REPO_URL
+      description: The git repository url
+    - name: GIT_REPO_NAME
+      description: The name of the deployment to be created / patched
+    - name: GIT_REVISION
+      description: The git revision
+      default: ""
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        name: gitops-pipeline-run-$(uid)
+        namespace: jiadchen-dev
+      spec:
+        serviceAccountName: pipeline
+        pipelineRef:
+          name: pipeline-gitops-dev
+        params:
+          - name: GIT_REPO_URL
+            value: $(tt.params.GIT_REPO_URL)
+          - name: GIT_REVISION
+            value: $(tt.params.GIT_REVISION)

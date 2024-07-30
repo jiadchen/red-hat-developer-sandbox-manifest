@@ -1,0 +1,19 @@
+﻿apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-gitops-dev
+spec:
+  params:
+    - name: GIT_REPO_URL
+      type: string
+    - name: GIT_REVISION
+      type: string
+  tasks:
+    - name: apply-manifest
+      taskRef:
+        name: apply-manifest
+      params:
+        - name: GIT_REPO_URL
+          value: $(params.GIT_REPO_URL)
+        - name: NAMESPACE
+          value: jiadchen-dev
