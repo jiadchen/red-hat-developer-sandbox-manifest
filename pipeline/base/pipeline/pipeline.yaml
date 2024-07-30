@@ -82,13 +82,15 @@ spec:
         - name: POD_NAMESPACE
           value: jiadchen-dev
         - name: APP_NAME
-          value: $(params.APP_NAME)
+          value: it-sample-app
         - name: GIT_REVISION
           value: $(params.GIT_REVISION)
         - name: APP_GIT_REPO_URL
           value: $(params.GIT_REPO_URL)
         - name: MANIFEST_DIR
-          value: apps/overlays/it
+          value: apps/overlays
+        - name: ENVIRONMENT
+          value: it
 
     - name: sample-app-integration-test
       taskRef:
@@ -136,13 +138,37 @@ spec:
         - name: IMAGE
           value: $(params.IMAGE_REGISTRY)/jiadchen-dev/sample-view:latest
 
+    - name: update-sample-view-image-tag-in-repo-it
+      taskRef:
+        name: update-image-tag-in-repo
+        kind: Task
+      runAfter:
+        - build-and-push-sample-view-image
+      params:
+        - name: IMAGE_REGISTRY
+          value: $(params.IMAGE_REGISTRY)
+        - name: NAMESPACE
+          value: jiadchen-dev
+        - name: POD_NAMESPACE
+          value: jiadchen-dev
+        - name: APP_NAME
+          value: it-sample-view
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: APP_GIT_REPO_URL
+          value: $(params.GIT_REPO_URL)
+        - name: MANIFEST_DIR
+          value: apps/overlays/it
+        - name: ENVIRONMENT
+          value: it
+
     # e2e
     - name: e2e-test
       taskRef:
         name: e2e-test
         kind: Task
       runAfter:
-        - build-and-push-sample-view-image
+        - update-sample-view-image-tag-in-repo-it
         - sample-app-integration-test
       workspaces:
         - name: source

@@ -128,6 +128,8 @@ spec:
       type: string
     - name: MANIFEST_DIR
       type: string
+    - name: ENVIRONMENT
+      type: string
   steps:
     - name: update-git-commit-push
       image: "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
@@ -148,7 +150,7 @@ spec:
 
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
-        cd gitops-repo/$(params.MANIFEST_DIR)
+        cd gitops-repo/$(params.MANIFEST_DIR)/$(params.ENVIRONMENT)
         git remote set-url origin $GITOPS_REPO_URL
 
         echo "Updating patch's deployment.yaml..."
@@ -185,7 +187,7 @@ spec:
         set -e
 
         # 確認したいPodの名前とNamespaceを設定
-        APP_NAME=$(params.APP_NAME)
+        APP_NAME=$(params.ENVIRONMENT)-$(params.APP_NAME)
         NAMESPACE=$(params.NAMESPACE)
         IMAGE_TAG=$(params.GIT_REVISION)
         POD_NAMESPACE=$(params.POD_NAMESPACE)
