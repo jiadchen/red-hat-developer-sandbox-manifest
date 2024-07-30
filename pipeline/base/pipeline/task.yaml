@@ -135,8 +135,8 @@ spec:
         #!/bin/sh
         yum install -y git
 
-        USERNAME=$(oc get secret git-credentials -n pipeline-dev -o jsonpath='{.data.username}' | base64 --decode)
-        PASSWORD=$(oc get secret git-credentials -n pipeline-dev -o jsonpath='{.data.password}' | base64 --decode)
+        USERNAME=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.username}' | base64 --decode)
+        PASSWORD=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.password}' | base64 --decode)
 
         git config --global user.email "sample-app-pipeline@openshift.com"
         git config --global user.name "sample-app-pipeline"
