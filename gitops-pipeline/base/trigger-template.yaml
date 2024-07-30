@@ -27,3 +27,5 @@ spec:
             value: $(tt.params.GIT_REPO_URL)
           - name: GIT_REVISION
             value: $(tt.params.GIT_REVISION)
+          - name: current-pipelinerun
+            value: $(context.pipelineRun.name)

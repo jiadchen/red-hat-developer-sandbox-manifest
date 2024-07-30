@@ -306,17 +306,6 @@ spec:
           value: pipeline-sample-app-dev
         - name: namespace
           value: jiadchen-dev
-## 備考
-# - name: sync-argo-app
-#   taskRef:
-#     name: argocd-task-sync-and-wait
-#     kind: ClusterTask
-#   runAfter:
-#     - build-and-push-image
-#   params:
-#     - name: application-name
-#       value: "apps" # 同期するArgo CDアプリケーションの名前
-#     - name: revision
-#       value: "HEAD" # 同期するリビジョン（通常はHEAD）
-#     - name: flags
-#       value: --insecure # needed in this example only because the Argo CD server is locally hosted
+        - name: limit
+          value: "2"
+

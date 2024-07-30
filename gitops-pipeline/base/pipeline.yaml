@@ -8,12 +8,39 @@ spec:
       type: string
     - name: GIT_REVISION
       type: string
+    - name: current-pipelinerun
+      type: string
   tasks:
+    - name: wait-for-previous-run
+      taskRef:
+        name: wait-for-previous-run
+      params:
+        - name: pipeline-name
+          value: pipeline-sample-app-dev
+        - name: namespace
+          value: jiadchen-dev
+        - name: current-pipelinerun
+          value: $(params.current-pipelinerun)
     - name: apply-manifest
       taskRef:
         name: apply-manifest
+      runAfter:
+        - wait-for-previous-run
       params:
         - name: GIT_REPO_URL
           value: $(params.GIT_REPO_URL)
         - name: NAMESPACE
           value: jiadchen-dev
+
+  finally:
+    - name: cleanup-pipelinerun
+      taskRef:
+        name: cleanup-pipelinerun
+        kind: Task
+      params:
+        - name: pipeline-name
+          value: pipeline-sample-app-dev
+        - name: namespace
+          value: jiadchen-dev
+        - name: limit
+          value: "4"

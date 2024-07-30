@@ -260,55 +260,6 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: wait-for-previous-run
-spec:
-  params:
-    - name: pipeline-name
-      type: string
-    - name: namespace
-      type: string
-    - name: current-pipelinerun
-      type: string
-  steps:
-    - name: wait
-      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
-      script: |
-        #!/bin/sh
-        echo "Current PipelineRun: $(params.current-pipelinerun)"
-        
-        while true; do
-          # 実行中のPipelineRunを取得し、開始時間の昇順でソート
-          EARLIEST_RUNNING_PIPELINERUN=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[?(@.status.conditions[0].status=="Unknown")]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -k2 | head -n1 | cut -f1)
-          LATEST_RUNNING_PIPELINERUN=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[?(@.status.conditions[0].status=="Unknown")]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -rk2 | head -n1 | cut -f1)
-          
-          # 一番早く開始されたPipelineRunの名前を出力
-          echo "Earliest running PipelineRun: $EARLIEST_RUNNING_PIPELINERUN"
-          # 一番遅く開始されたPipelineRunの名前を出力
-          echo "Latest running PipelineRun: $LATEST_RUNNING_PIPELINERUN"
-
-          # 一番遅く開始されたPipelineRunと自分自身を比較
-          if [ "$LATEST_RUNNING_PIPELINERUN" != "$(params.current-pipelinerun)" ]; then
-            echo "A later PipelineRun has been found: $LATEST_RUNNING_PIPELINERUN. Cancelling current PipelineRun: $(params.current-pipelinerun)"
-            # 自分自身をキャンセル
-            oc patch pipelinerun '$(params.current-pipelinerun)' -n '$(params.namespace)' -p '{"spec":{"status":"Cancelled"}}' --type=merge
-            exit 1
-          fi
-
-          # 一番早く開始されたPipelineRunと自分自身を比較
-          if [ "$EARLIEST_RUNNING_PIPELINERUN" = "$(params.current-pipelinerun)" ]; then
-            echo "This PipelineRun is the earliest running instance. Proceeding..."
-            break
-          fi
-
-          # 他のPipelineRunがまだ実行中の場合、待機
-          echo "Waiting for turn. Earliest running PipelineRun: $EARLIEST_RUNNING_PIPELINERUN"
-          sleep 10
-        done
-
----
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
   name: sample-view-unit-test
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
@@ -430,41 +381,4 @@ spec:
         if [ $test_exit_code -ne 0 ]; then
           echo "test failed"
           exit 1
-        fi
-
----
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: cleanup-pipelinerun
-spec:
-  params:
-    - name: pipeline-name
-      type: string
-    - name: namespace
-      type: string
-  steps:
-    - name: cleanup
-      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
-      script: |
-        #!/bin/sh
-        echo "Pipeline: $(params.pipeline-name)"
-        echo "Namespace: $(params.namespace)"
-        
-        # 全てのPipelineRunを取得し、開始時間の昇順でソート
-        PIPELINERUNS=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -k2)
-        
-        # PipelineRunの数を数える
-        PIPELINERUN_COUNT=$(echo "$PIPELINERUNS" | wc -l)
-        echo "Number of PipelineRuns: $PIPELINERUN_COUNT"
-        
-        # PipelineRunの数が4以上の場合、一番早く開始されたPipelineRunを削除
-        if [ "$PIPELINERUN_COUNT" -ge 4 ]; then
-          EARLIEST_PIPELINERUN=$(echo "$PIPELINERUNS" | head -n1 | cut -f1)
-          echo "Earliest PipelineRun to delete: $EARLIEST_PIPELINERUN"
-          
-          # PipelineRunを削除
-          oc delete pipelinerun $EARLIEST_PIPELINERUN -n $(params.namespace)
-        else
-          echo "Number of PipelineRuns is less than 4. No action taken."
         fi
