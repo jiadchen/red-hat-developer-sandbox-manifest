@@ -207,6 +207,15 @@ spec:
           value: "false"
         - name: IMAGE
           value: $(params.IMAGE_REGISTRY)/jiadchen-dev/test-reports:latest
+    - name: cleanup-pipelinerun
+      taskRef:
+        name: cleanup-pipelinerun
+        kind: Task
+      params:
+        - name: pipeline-name
+          value: pipeline-sample-app-dev
+        - name: namespace
+          value: jiadchen-dev
 ## 備考
 # - name: sync-argo-app
 #   taskRef:

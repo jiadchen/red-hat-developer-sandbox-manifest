@@ -431,3 +431,40 @@ spec:
           echo "test failed"
           exit 1
         fi
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cleanup-pipelinerun
+spec:
+  params:
+    - name: pipeline-name
+      type: string
+    - name: namespace
+      type: string
+  steps:
+    - name: cleanup
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      script: |
+        #!/bin/sh
+        echo "Pipeline: $(params.pipeline-name)"
+        echo "Namespace: $(params.namespace)"
+        
+        # 全てのPipelineRunを取得し、開始時間の昇順でソート
+        PIPELINERUNS=$(oc get pipelinerun -n $(params.namespace) -l tekton.dev/pipeline=$(params.pipeline-name) -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.startTime}{"\n"}{end}' | sort -k2)
+        
+        # PipelineRunの数を数える
+        PIPELINERUN_COUNT=$(echo "$PIPELINERUNS" | wc -l)
+        echo "Number of PipelineRuns: $PIPELINERUN_COUNT"
+        
+        # PipelineRunの数が4以上の場合、一番早く開始されたPipelineRunを削除
+        if [ "$PIPELINERUN_COUNT" -ge 4 ]; then
+          EARLIEST_PIPELINERUN=$(echo "$PIPELINERUNS" | head -n1 | cut -f1)
+          echo "Earliest PipelineRun to delete: $EARLIEST_PIPELINERUN"
+          
+          # PipelineRunを削除
+          oc delete pipelinerun $EARLIEST_PIPELINERUN -n $(params.namespace)
+        else
+          echo "Number of PipelineRuns is less than 4. No action taken."
+        fi
