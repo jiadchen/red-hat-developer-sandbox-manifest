@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: sample-view
-          image: image-registry.openshift-image-registry.svc:5000/jiadchen-dev/sample-view:69fdef44e6f70dda2b6b9de04e95c14dbf10e291
+          image: image-registry.openshift-image-registry.svc:5000/jiadchen-dev/sample-view:a45489dc124f9b8332a0ba1b158b3d6a77eceda0
           env:
             - name: API_BASE_URL
               value: https://it-sample-app-jiadchen-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com
