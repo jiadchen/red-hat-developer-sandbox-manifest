@@ -144,11 +144,12 @@ spec:
         git config --global user.name "sample-app-pipeline"
 
         GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$PASSWORD@|; s|red-hat-developer-sandbox-apps|red-hat-developer-sandbox-manifest|")
-        gitops repo url is $GITOPS_REPO_URL
+        echo gitops repo url is $GITOPS_REPO_URL
 
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
         cd gitops-repo/$(params.MANIFEST_DIR)
+        git remote set-url origin GITOPS_REPO_URL
 
         echo "Updating patch's deployment.yaml..."
         sed -i 's|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):[^|]*|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)|g' patch/$(params.APP_NAME)/deployment.yaml
