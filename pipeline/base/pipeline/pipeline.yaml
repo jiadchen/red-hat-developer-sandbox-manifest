@@ -136,7 +136,7 @@ spec:
         - name: TLSVERIFY
           value: "false"
         - name: IMAGE
-          value: $(params.IMAGE_REGISTRY)/jiadchen-dev/sample-view:latest
+          value: $(params.IMAGE_REGISTRY)/jiadchen-dev/sample-view:$(params.GIT_REVISION)
 
     - name: update-sample-view-image-tag-in-repo-it
       taskRef:
