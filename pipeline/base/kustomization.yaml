@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   # For app pipeline
+  - pipeline/secret.yaml
   - pipeline/pipeline.yaml
   - pipeline/event-listener.yaml
   - pipeline/trigger-binding.yaml
