@@ -18,10 +18,23 @@ spec:
   workspaces:
     - name: workspace
   tasks:
+    - name: wait-for-previous-run
+      taskRef:
+        name: wait-for-previous-run
+      params:
+        - name: pipeline-name
+          value: pipeline-sample-app-dev
+        - name: namespace
+          value: pipeline-dev
+        - name: current-pipelinerun
+          value: $(params.current-pipelinerun)
+
     - name: clone-repository
       taskRef:
         name: git-clone
         kind: ClusterTask
+      runAfter:
+        - wait-for-previous-run
       workspaces:
         - name: output
           workspace: workspace
