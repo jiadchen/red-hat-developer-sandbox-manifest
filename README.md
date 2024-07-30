@@ -10,3 +10,7 @@ oc create secret generic git-credentials \
   --from-literal=token=<token>
 ```
 `<username>`と`<token>`をあなたのGitHubアカウントの情報に置き換えてください。
+
+sandboxの制約としてpodを50個に達していると、podの作成ができなくなるので、podの削除が必要です。  
+Completedの状態のPodを全部削除するコマンド  
+`oc get pods -n jiadchen-dev --field-selector=status.phase=Succeeded -o jsonpath='{.items[*].metadata.name}' | xargs -r oc delete pod -n jiadchen-dev`

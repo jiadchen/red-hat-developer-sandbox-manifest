@@ -118,6 +118,51 @@ spec:
         - name: PROJECT_DIR
           value: integration-test/sample-app
 
+    - name: update-sample-app-image-tag-in-repo-dev
+      taskRef:
+        name: update-image-tag-in-repo
+        kind: Task
+      runAfter:
+        - e2e-test
+      params:
+        - name: IMAGE_REGISTRY
+          value: $(params.IMAGE_REGISTRY)
+        - name: NAMESPACE
+          value: jiadchen-dev
+        - name: POD_NAMESPACE
+          value: jiadchen-dev
+        - name: APP_NAME
+          value: $(params.APP_NAME)
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: APP_GIT_REPO_URL
+          value: $(params.GIT_REPO_URL)
+        - name: MANIFEST_DIR
+          value: apps/overlays
+        - name: ENVIRONMENT
+          value: dev
+
+    - name: tag-sample-app-image-version
+      taskRef:
+        name: tag-image-version
+        kind: Task
+      runAfter:
+        - e2e-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: IMAGE_REGISTRY
+          value: $(params.IMAGE_REGISTRY)
+        - name: NAMESPACE
+          value: jiadchen-dev
+        - name: APP_NAME
+          value: $(params.APP_NAME)
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: PROJECT_DIR
+          value: apps/sample-app
+
     # sample-vew
     - name: sample-view-unit-test
       taskRef:
@@ -174,6 +219,51 @@ spec:
           value: apps/overlays
         - name: ENVIRONMENT
           value: it
+
+    - name: update-sample-view-image-tag-in-repo-dev
+      taskRef:
+        name: update-image-tag-in-repo
+        kind: Task
+      runAfter:
+        - e2e-test
+      params:
+        - name: IMAGE_REGISTRY
+          value: $(params.IMAGE_REGISTRY)
+        - name: NAMESPACE
+          value: jiadchen-dev
+        - name: POD_NAMESPACE
+          value: jiadchen-dev
+        - name: APP_NAME
+          value: sample-view
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: APP_GIT_REPO_URL
+          value: $(params.GIT_REPO_URL)
+        - name: MANIFEST_DIR
+          value: apps/overlays
+        - name: ENVIRONMENT
+          value: dev
+
+    - name: tag-sample-view-image-version
+      taskRef:
+        name: tag-image-version
+        kind: Task
+      runAfter:
+        - e2e-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: IMAGE_REGISTRY
+          value: $(params.IMAGE_REGISTRY)
+        - name: NAMESPACE
+          value: jiadchen-dev
+        - name: APP_NAME
+          value: sample-view
+        - name: GIT_REVISION
+          value: $(params.GIT_REVISION)
+        - name: PROJECT_DIR
+          value: apps/sample-view
 
     # e2e
     - name: e2e-test
