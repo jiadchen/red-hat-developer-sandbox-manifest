@@ -139,13 +139,13 @@ spec:
 
         USERNAME=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.username}' | base64 --decode)
         echo username is $USERNAME
-        PASSWORD=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.password}' | base64 --decode)
-        echo password is $PASSWORD
+        TOKEN=$(oc get secret git-credentials -n jiadchen-dev -o jsonpath='{.data.token}' | base64 --decode)
+        echo token is $TOKEN
 
         git config --global user.email "sample-app-pipeline@openshift.com"
         git config --global user.name "sample-app-pipeline"
 
-        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$PASSWORD@|; s|red-hat-developer-sandbox-apps|red-hat-developer-sandbox-manifest|")
+        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$TOKEN@|; s|red-hat-developer-sandbox-apps|red-hat-developer-sandbox-manifest|")
         echo gitops repo url is $GITOPS_REPO_URL
 
         echo "Cloning GitOps repository..."
