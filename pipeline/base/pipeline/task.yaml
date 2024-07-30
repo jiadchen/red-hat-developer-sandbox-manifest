@@ -149,7 +149,7 @@ spec:
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
         cd gitops-repo/$(params.MANIFEST_DIR)
-        git remote set-url origin GITOPS_REPO_URL
+        git remote set-url origin $GITOPS_REPO_URL
 
         echo "Updating patch's deployment.yaml..."
         sed -i 's|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):[^|]*|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)|g' patch/$(params.APP_NAME)/deployment.yaml
