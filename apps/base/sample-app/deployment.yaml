@@ -4,9 +4,6 @@ metadata:
   name: sample-app
   labels:
     app: sample-app
-  annotations:
-    image.openshift.io/triggers: >-
-      [{"from":{"kind":"ImageStreamTag","name":"sample-app:latest","namespace":"jiadchen-dev"},"fieldPath":"spec.template.spec.containers[?(@.name==\"sample-app\")].image"}]
 spec:
   replicas: 1
   selector:
