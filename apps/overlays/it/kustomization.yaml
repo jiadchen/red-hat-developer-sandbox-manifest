@@ -14,4 +14,4 @@ patches:
   - path: patch/sample-view/service.yaml
   - path: patch/sample-view/route.yaml
 
-namePrefix: dev-
+namePrefix: it-

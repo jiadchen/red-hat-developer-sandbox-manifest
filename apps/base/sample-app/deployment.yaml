@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: sample-app
-          image: image-registry.openshift-image-registry.svc:5000/sample-system-dev/sample-app:latest
+          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-app:latest
           ports:
             - containerPort: 8080
               protocol: TCP

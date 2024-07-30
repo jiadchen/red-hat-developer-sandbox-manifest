@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: sample-view
-          image: image-registry.openshift-image-registry.svc:5000/sample-system-dev/sample-view:latest
+          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-view:latest
           ports:
             - containerPort: 3000
               protocol: TCP

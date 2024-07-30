@@ -1,0 +1,9 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: sample-app
+  labels:
+    app: it-sample-app
+spec:
+  selector:
+    deployment: it-sample-app

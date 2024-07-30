@@ -1,0 +1,21 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sample-view
+  labels:
+    app: it-sample-view
+spec:
+  selector:
+    matchLabels:
+      deployment: it-sample-view
+  template:
+    metadata:
+      labels:
+        deployment: it-sample-view
+        app: it-sample-view
+    spec:
+      containers:
+        - name: sample-view
+          env:
+            - name: API_BASE_URL
+              value: https://sample-app-rhn-support-jiadchen-dev.apps.sandbox-m4.g2pi.p1.openshiftapps.com

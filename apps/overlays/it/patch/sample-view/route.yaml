@@ -1,0 +1,10 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: sample-view
+  labels:
+    app: it-sample-view
+spec:
+  to:
+    kind: Service
+    name: it-sample-view
