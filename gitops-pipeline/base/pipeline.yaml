@@ -39,7 +39,7 @@ spec:
         kind: Task
       params:
         - name: pipeline-name
-          value: pipeline-sample-app-dev
+          value: pipeline-gitops-dev
         - name: namespace
           value: jiadchen-dev
         - name: limit
