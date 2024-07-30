@@ -141,15 +141,15 @@ spec:
         git config --global user.email "sample-app-pipeline@openshift.com"
         git config --global user.name "sample-app-pipeline"
 
-        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$PASSWORD@|; s|openshift-sample-apps|openshift-sample-manifest|")
+        GITOPS_REPO_URL=$(echo $(params.APP_GIT_REPO_URL) | sed "s|https://|https://$USERNAME:$PASSWORD@|; s|apps|manifest|")
 
         echo "Cloning GitOps repository..."
         git clone $GITOPS_REPO_URL gitops-repo
         cd gitops-repo/$(params.MANIFEST_DIR)
 
-        echo "Updating kustomization.yaml..."
-        sed -i 's|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):[^|]*|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)|g' kustomization.yaml
-        git add kustomization.yaml
+        echo "Updating patch's deployment.yaml..."
+        sed -i 's|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):[^|]*|$(params.IMAGE_REGISTRY)/$(params.NAMESPACE)/$(params.APP_NAME):$(params.GIT_REVISION)|g' patch/$(params.APP_NAME)/deployment.yaml
+        git add patch/$(params.APP_NAME)/deployment.yaml
         git commit -m "Update $(params.APP_NAME) image tag to $(params.GIT_REVISION)"
 
         MAX_RETRIES=3

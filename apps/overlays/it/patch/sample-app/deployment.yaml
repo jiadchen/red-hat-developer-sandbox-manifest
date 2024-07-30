@@ -13,3 +13,9 @@ spec:
       labels:
         deployment: it-sample-app
         app: it-sample-app
+    spec:
+      containers:
+        - name: sample-app
+          ports:
+            - containerPort: 8080
+              protocol: TCP
