@@ -14,3 +14,6 @@ oc create secret generic git-credentials \
 sandboxの制約としてpodを50個に達していると、podの作成ができなくなるので、podの削除が必要です。  
 Completedの状態のPodを全部削除するコマンド  
 `oc get pods -n jiadchen-dev --field-selector=status.phase=Succeeded -o jsonpath='{.items[*].metadata.name}' | xargs -r oc delete pod -n jiadchen-dev`
+
+すべてのpipelinerunを削除するコマンド  
+`oc delete pipelinerun --all -n jiadchen-dev`

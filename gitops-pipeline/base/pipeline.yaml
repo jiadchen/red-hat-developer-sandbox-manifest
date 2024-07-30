@@ -16,7 +16,7 @@ spec:
         name: wait-for-previous-run
       params:
         - name: pipeline-name
-          value: pipeline-sample-app-dev
+          value: pipeline-gitops-dev
         - name: namespace
           value: jiadchen-dev
         - name: current-pipelinerun
