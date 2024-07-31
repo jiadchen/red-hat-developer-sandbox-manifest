@@ -351,9 +351,6 @@ spec:
           echo "test failed"
           exit 1
         fi
-      resources:
-        limits:
-          memory: "4Gi"
 
 ---
 apiVersion: tekton.dev/v1beta1
