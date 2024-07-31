@@ -7,4 +7,3 @@ resources:
   - trigger-binding.yaml
   - trigger-template.yaml
   - task.yaml
-  - limit-range.yaml
