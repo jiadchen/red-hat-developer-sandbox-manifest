@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limitrange-container
+spec:
+  limits:
+  - default:  # The default limits
+      memory: "2Gi"
+    type: Container
