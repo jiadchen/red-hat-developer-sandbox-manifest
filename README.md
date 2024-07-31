@@ -52,7 +52,7 @@ oc create secret generic git-credentials \
 
 ## 7. Namespace の置換
 
-1. apps と manifest のリポジトリにおいて、`jiadchen-dev` となっているすべての部分を、ご自身の Namespace に置換します。
+1. apps と manifest のリポジトリにおいて、`rhn-support-jiadchen-dev` となっているすべての部分を、ご自身の Namespace に置換します。
 2. 変更を Git コミットします。
 
 ## 8. GitOps Pipeline マニフェストの適用
@@ -73,7 +73,7 @@ oc apply -k overlays/dev
 oc get route el-gitops-event-listener-dev
 ```
 
-2. HOST/PORT の列に` el-gitops-event-listener-dev-jiadchen-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com`のような URL が表示されます。
+2. HOST/PORT の列に` el-gitops-event-listener-dev-rhn-support-jiadchen-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com`のような URL が表示されます。
 3. 取得した URL を Github のマニフェストのリポジトリの Webhook に設定します。
 
 ## 10. Webhook の設定
@@ -93,10 +93,12 @@ oc get route el-gitops-event-listener-dev
 
 ## 12. SonarQube の設定
 
-1. gitopsのパイプラインが正常終了したら、SonarQube の URL を確認します。
+1. gitops のパイプラインが正常終了したら、SonarQube の URL を確認します。
+
 ```bash
 oc get route sonarqube
 ```
+
 2. 上記で取得した URL をブラウザで開きます。
 3. username:admin, password:admin でログインします。初期パスワードを任意のパスワードに変更します。
 4. 右上に「Administration」をクリックし、「My Account」をクリックします。
@@ -106,6 +108,7 @@ oc get route sonarqube
    2. `red-hat-developer-sandbox-apps/apps/sample-view/sonar-project.properties`の`sonar.login`の値を設定します。
 
 ## 13. 各種サービスの URL を置き換える
+
 1. `red-hat-developer-sandbox-apps/e2e/.env.ci`
    1. TARGET_PAGE_URL に`oc get route it-sample-view`で取得した URL を設定します。
    2. API_BASE_URL に`oc get route it-sample-app`で取得した URL を設定します。
@@ -127,9 +130,11 @@ oc get route sonarqube
 ## 14. テストレポートの確認
 
 1. テストレポートの URL を確認し、ブラウザでアクセスします。
+
 ```bash
 oc get route test-reports -n pipeline-dev
 ```
+
 2. sample-app の単体テストレポート: <テストレポートの URL>/sample-app/unit-test
 3. sample-app の結合テストレポート: <テストレポートの URL>/sample-app/integration-test
 4. sample-view の単体テストレポート: <テストレポートの URL>/sample-view/unit-test
@@ -137,14 +142,16 @@ oc get route test-reports -n pipeline-dev
 6. e2e テストレポート: <テストレポートの URL>/e2e
 
 ## 15. デモアプリの動作確認
+
 1. <`oc get route dev-sample-view`で取得した URL>/hello にアクセスし、デモ画面が表示されます。
 2. 「API Call」をクリックし、API からのレスポンスが下に表示されます。`Hello, openshift! version:1.0.46`
 
 ## トラブルシューティング
-1. sandbox の制約として pod を 50 個に達していると、pod の作成ができなくなるので、pod の削除が必要です。  
-Completed の状態の Pod を全部削除するコマンド  
-`oc get pods -n jiadchen-dev --field-selector=status.phase=Succeeded -o jsonpath='{.items[*].metadata.name}' | xargs -r oc delete pod -n jiadchen-dev`
 
-2. pipelineRun がたくさん増えると、pod数の上限に達してしまったり、pvのサイズが40GBを超えたりするため、pipelinerun を削除する必要があります。  
-すべての pipelinerun を削除するコマンド  
-`oc delete pipelinerun --all -n jiadchen-dev`
+1. sandbox の制約として pod を 50 個に達していると、pod の作成ができなくなるので、pod の削除が必要です。  
+   Completed の状態の Pod を全部削除するコマンド  
+   `oc get pods -n rhn-support-jiadchen-dev --field-selector=status.phase=Succeeded -o jsonpath='{.items[*].metadata.name}' | xargs -r oc delete pod -n rhn-support-jiadchen-dev`
+
+2. pipelineRun がたくさん増えると、pod 数の上限に達してしまったり、pv のサイズが 40GB を超えたりするため、pipelinerun を削除する必要があります。  
+   すべての pipelinerun を削除するコマンド  
+   `oc delete pipelinerun --all -n rhn-support-jiadchen-dev`
