@@ -189,9 +189,6 @@ spec:
       params:
         - name: PROJECT_DIR
           value: apps/sample-view
-      resources:
-        limits:
-          memory: "2Gi"
 
     - name: build-and-push-sample-view-image
       taskRef:
