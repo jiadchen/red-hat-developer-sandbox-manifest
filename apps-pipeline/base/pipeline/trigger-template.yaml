@@ -40,8 +40,3 @@ spec:
                 resources:
                   requests:
                     storage: 5Gi
-        taskRunSpecs:
-          - pipelineTaskName: build-and-push-sample-app-image
-            computeResources:
-              limits:
-                memory: "2Gi"
