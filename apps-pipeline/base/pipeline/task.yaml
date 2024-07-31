@@ -340,6 +340,8 @@ spec:
       workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
       script: |
         #!/bin/sh
+        git config --global user.email "sample-app-pipeline@openshift.com"
+        git config --global user.name "sample-app-pipeline"
         git config --global --add safe.directory /workspace/source
         ./test-storybook.sh
         test_exit_code=$?
