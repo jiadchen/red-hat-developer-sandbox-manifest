@@ -19,4 +19,4 @@ spec:
           image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-view:7ba6676a4d50f648d85e8610f196688b2dc641e9
           env:
             - name: API_BASE_URL
-              value: https://dev-sample-app-rhn-support-jiadchen-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com
+              value: https://dev-sample-app-rhn-support-jiadchen-dev.apps.sandbox-m4.g2pi.p1.openshiftapps.com
