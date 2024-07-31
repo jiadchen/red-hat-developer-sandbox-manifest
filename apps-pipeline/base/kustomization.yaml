@@ -12,3 +12,11 @@ resources:
   - test-reports/deployment.yaml
   - test-reports/service.yaml
   - test-reports/route.yaml
+  # For sonarqube
+  - sonarqube/deployment.yaml
+  - sonarqube/pvc.yaml
+  - sonarqube/service.yaml
+  - sonarqube/route.yaml
+  - sonarqube/postgresql/deployment.yaml
+  - sonarqube/postgresql/pvc.yaml
+  - sonarqube/postgresql/service.yaml
