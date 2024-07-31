@@ -340,6 +340,7 @@ spec:
       workingDir: $(workspaces.source.path)/$(params.PROJECT_DIR)
       script: |
         #!/bin/sh
+        git config --global --add safe.directory /workspace/source
         ./test-storybook.sh
         test_exit_code=$?
         npm run build-storybook
