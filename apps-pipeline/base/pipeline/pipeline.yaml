@@ -65,7 +65,6 @@ spec:
     - name: build-and-push-sample-app-image
       taskRef:
         name: buildah
-        kind: ClusterTask
       runAfter:
         - sample-app-unit-test
       workspaces:
