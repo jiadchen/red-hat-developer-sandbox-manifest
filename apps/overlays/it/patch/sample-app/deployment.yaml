@@ -16,4 +16,4 @@ spec:
     spec:
       containers:
         - name: sample-app
-          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-app:b7ec51c307eb97579df5f62b928c0e90d6d02e95
+          image: image-registry.openshift-image-registry.svc:5000/rhn-support-jiadchen-dev/sample-app:9931368dbf4c9c1c76bc4bce44692220aaac7896
