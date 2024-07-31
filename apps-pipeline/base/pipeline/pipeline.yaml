@@ -3,7 +3,6 @@ kind: Pipeline
 metadata:
   name: pipeline-sample-app-dev
 spec:
-  enable-api-fields: beta
   params:
     - name: APP_NAME
       type: string
