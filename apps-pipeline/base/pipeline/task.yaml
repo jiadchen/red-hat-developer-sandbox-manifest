@@ -353,7 +353,7 @@ spec:
         fi
       resources:
         limits:
-          memory: "2Gi"
+          memory: "3Gi"
 
 ---
 apiVersion: tekton.dev/v1beta1
