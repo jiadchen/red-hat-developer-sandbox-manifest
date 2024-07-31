@@ -40,7 +40,6 @@ spec:
                 resources:
                   requests:
                     storage: 5Gi
-        enable-api-fields: beta
         taskRunSpecs:
           - pipelineTaskName: build-and-push-sample-app-image
             computeResources:
