@@ -177,12 +177,28 @@ spec:
         - name: PROJECT_DIR
           value: apps/sample-view
 
+    - name: sample-view-storybook-interaction-test
+      taskRef:
+        name: sample-view-storybook-interaction-test
+        kind: Task
+      runAfter:
+        - sample-view-unit-test
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: apps/sample-view
+      resources:
+        limits:
+          memory: "2Gi"
+
     - name: build-and-push-sample-view-image
       taskRef:
         name: buildah
         kind: ClusterTask
       runAfter:
-        - sample-view-unit-test
+        - sample-view-storybook-interaction-test
       workspaces:
         - name: source
           workspace: workspace
