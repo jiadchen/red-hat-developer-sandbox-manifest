@@ -322,3 +322,25 @@ spec:
         - name: limit
           value: "2"
 
+    - name: sample-app-sonar
+      taskRef:
+        name: sample-app-sonar
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: apps/sample-app
+
+    - name: sample-view-sonar
+      taskRef:
+        name: sample-view-sonar
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: PROJECT_DIR
+          value: apps/sample-view
+
